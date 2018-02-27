@@ -2,7 +2,6 @@
 Created on Oct 10, 2017
 
 @author: Lia
-
 '''
 
 import parser
