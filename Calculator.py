@@ -1,11 +1,7 @@
 import parser
 import tkinter
 from tkinter import ttk
-
-'''
-adding scroll bar to history table
-everything is working EXCEPT THAT the inner_frame refuses to resize to fill the canvas area, and if I manually resize the widgets inside the inner_frame, then it over-extends to be far too big
-'''
+from tkinter import font
 
 class ScrollFrame(tkinter.Frame):
 
@@ -15,37 +11,41 @@ class ScrollFrame(tkinter.Frame):
 		self.columnconfigure(0, weight=1)
 		self.rowconfigure(0, weight=1)
 
-		self.canvas = tkinter.Canvas(self, bg="red") #"white")
+		self.canvas = tkinter.Canvas(self, bg="white")
 		self.canvas.grid(row=0, column=0, sticky=tkinter.NSEW)
 		self.canvas.bind("<Configure>", self.on_resize)
 		
 		self.scrollbar = tkinter.Scrollbar(self, orient="vertical", command=self.canvas.yview)
 		self.scrollbar.grid(row=0, column=1, sticky=tkinter.NS)
 		self.canvas.configure(yscrollcommand=self.scrollbar.set)
-		self.canvas.grid_propagate(False)
 
 		self.inner_frame = tkinter.Frame(self.canvas)
-		self.inner_frame.grid(row=0, column=0, sticky=tkinter.EW)
+		self.inner_frame.grid(row=0, column=0)
 		self.canvas.columnconfigure(0, weight=1)
 
 		self.canvas.create_window(0, 0, window=self.inner_frame, anchor='nw')
 		self.update_scroll_region()
 		
 	def update_scroll_region(self):
-		self.inner_frame.configure(width=self.canvas.winfo_width())
-		#self.inner_frame.grid_propagate(True)
+		#this mess is because the inner_frame refused to expand to fill the canvas
+		max_pixel_width = self.canvas.winfo_width() // 2
+		char_count = 1
+		while default_font.measure("A"*char_count) < max_pixel_width: #convert pixel unit to char unit
+			char_count += 1
+		char_count -= 1
 		for widget in self.inner_frame.children.values():
-			if widget.grid_info()["column"] == 1:
+			if widget.grid_info()["column"] == 1: #skip the separator widget
 				continue
-			print("changing width from ", widget.winfo_width())
-			#widget.configure(width=200) #(self.canvas.winfo_width() // 3))
+			widget.configure(width=char_count)
+		#this part should stay
 		self.master.update()
 		self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-		print("canvas ", self.canvas.winfo_width(), self.canvas.winfo_height())
-		print("inner frame ", self.inner_frame.winfo_width(), self.inner_frame.winfo_height())
 		
 	def on_resize(self, event):	
 		self.update_scroll_region()
+		
+	def scroll_to_bottom(self):
+		self.canvas.yview_moveto(1)
 
 class Window(tkinter.Frame):
 	
@@ -68,14 +68,14 @@ class Window(tkinter.Frame):
 		self.columnconfigure(2, weight=1)
 		self.rowconfigure(1, weight=1)
 
-		tkinter.Label(self, text="Input", anchor=tkinter.W).grid(row=0, column=0, sticky=tkinter.EW)
-		ttk.Separator(self, orient=tkinter.VERTICAL).grid(row=0, column=1, stick=tkinter.NS)
-		tkinter.Label(self, text="Output", anchor=tkinter.W).grid(row=0, column=2, sticky=tkinter.EW)
+		tkinter.Label(self, text="Input", anchor=tkinter.W, font=default_font).grid(row=0, column=0, sticky=tkinter.EW)
+		#ttk.Separator(self, orient=tkinter.VERTICAL).grid(row=0, column=1, stick=tkinter.NS)
+		tkinter.Label(self, text="Output", anchor=tkinter.W, font=default_font).grid(row=0, column=2, sticky=tkinter.EW)
 
 		self.frame_history = ScrollFrame(self)
 		self.frame_history.grid(row=1, column=0, columnspan=3, sticky=tkinter.NSEW)
 		
-		self.input_equation = tkinter.Text(self, height=3, width=30, relief=tkinter.FLAT)
+		self.input_equation = tkinter.Text(self, height=3, width=30, relief=tkinter.FLAT, font=default_font)
 		self.input_equation.grid(row=2, column=0, columnspan=3, sticky=tkinter.EW)
 		self.input_equation.bind("<Return>", self.submit_equation)
 		self.input_equation.bind("<Up>", self.history_up)
@@ -83,22 +83,20 @@ class Window(tkinter.Frame):
 		self.input_equation.focus_set()
 		
 	def append_output(self, equation, result):
-		self.frame_history.inner_frame.columnconfigure(0, weight=1)
-		self.frame_history.inner_frame.columnconfigure(2, weight=1)
-	
 		self.list_equations.append(equation)
 		self.list_results.append(result)
 		row = len(self.list_equations) + 1
-		output_equation = tkinter.Text(self.frame_history.inner_frame, height=1, width=30, relief=tkinter.FLAT)
+		output_equation = tkinter.Text(self.frame_history.inner_frame, height=1, width=30, relief=tkinter.FLAT, font=default_font)
 		output_equation.insert(tkinter.END, equation)
 		output_equation.config(state=tkinter.DISABLED)
 		output_equation.grid(row=row, column=0, sticky=tkinter.EW)
 		ttk.Separator(self.frame_history.inner_frame, orient=tkinter.VERTICAL).grid(row=row, column=1, stick=tkinter.NS)
-		output_result = tkinter.Text(self.frame_history.inner_frame, height=1, width=30, relief=tkinter.FLAT)
+		output_result = tkinter.Text(self.frame_history.inner_frame, height=1, width=30, relief=tkinter.FLAT, font=default_font)
 		output_result.insert(tkinter.END, result)
 		output_result.config(state=tkinter.DISABLED)
 		output_result.grid(row=row, column=2, sticky=tkinter.EW)
 		self.frame_history.update_scroll_region()
+		self.frame_history.scroll_to_bottom()
 
 	def clear_input(self):
 		self.input_equation.delete("1.0", tkinter.END)
@@ -163,5 +161,6 @@ class Window(tkinter.Frame):
 			return "Error: " + str(e)
 
 root = tkinter.Tk()
+default_font = font.Font(family="Courier", size=10, weight="normal")
 app = Window(root)
 root.mainloop()
