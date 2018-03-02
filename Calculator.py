@@ -32,9 +32,13 @@ class ScrollFrame(tkinter.Frame):
 		char_count = 1
 		while default_font.measure("A"*char_count) < max_pixel_width: #convert pixel unit to char unit
 			char_count += 1
-		char_count -= 1
+		char_count -= 3
 		for widget in self.inner_frame.children.values():
 			if widget.grid_info()["column"] == 1: #skip the separator widget
+				continue
+			if widget.grid_info()["column"] == 2: #skip the var widget
+				continue
+			if widget.grid_info()["column"] == 3: #skip the other separator widget
 				continue
 			widget.configure(width=char_count)
 		#this part should stay
@@ -69,7 +73,7 @@ class Window(tkinter.Frame):
 		self.rowconfigure(1, weight=1)
 
 		tkinter.Label(self, text="Input", anchor=tkinter.W, font=default_font).grid(row=0, column=0, sticky=tkinter.EW)
-		#ttk.Separator(self, orient=tkinter.VERTICAL).grid(row=0, column=1, stick=tkinter.NS)
+		tkinter.Label(self, text=" X  ", anchor=tkinter.W, font=default_font).grid(row=0, column=1, sticky=tkinter.EW)
 		tkinter.Label(self, text="Output", anchor=tkinter.W, font=default_font).grid(row=0, column=2, sticky=tkinter.EW)
 
 		self.frame_history = ScrollFrame(self)
@@ -85,16 +89,27 @@ class Window(tkinter.Frame):
 	def append_output(self, equation, result):
 		self.list_equations.append(equation)
 		self.list_results.append(result)
-		row = len(self.list_equations) + 1
+		row = len(self.list_equations)
+
 		output_equation = tkinter.Text(self.frame_history.inner_frame, height=1, width=30, relief=tkinter.FLAT, font=default_font)
 		output_equation.insert(tkinter.END, equation)
 		output_equation.config(state=tkinter.DISABLED)
 		output_equation.grid(row=row, column=0, sticky=tkinter.EW)
+
 		ttk.Separator(self.frame_history.inner_frame, orient=tkinter.VERTICAL).grid(row=row, column=1, stick=tkinter.NS)
+
+		x = tkinter.Text(self.frame_history.inner_frame, height=1, width=4, relief=tkinter.FLAT, font=default_font)
+		x.insert(tkinter.END, "X"+str(row)+"=")
+		x.config(state=tkinter.DISABLED)
+		x.grid(row=row, column=2, sticky=tkinter.EW)
+
+		ttk.Separator(self.frame_history.inner_frame, orient=tkinter.VERTICAL).grid(row=row, column=3, stick=tkinter.NS)
+
 		output_result = tkinter.Text(self.frame_history.inner_frame, height=1, width=30, relief=tkinter.FLAT, font=default_font)
 		output_result.insert(tkinter.END, result)
 		output_result.config(state=tkinter.DISABLED)
-		output_result.grid(row=row, column=2, sticky=tkinter.EW)
+		output_result.grid(row=row, column=4, sticky=tkinter.EW)
+
 		self.frame_history.update_scroll_region()
 		self.frame_history.scroll_to_bottom()
 
@@ -136,6 +151,7 @@ class Window(tkinter.Frame):
 	def submit_equation(self, event):
 		equation = self.text_last_line(event.widget)
 		equation = equation.strip()
+		equation = self.convert_x_variables(equation)
 		result = self.calculate(equation)
 		self.append_output(equation, str(result))
 		self.clear_input()
@@ -147,6 +163,11 @@ class Window(tkinter.Frame):
 		some_text = text_widget.get("1.0", tkinter.END) #get full text
 		lines = some_text.split("\n")
 		return lines[-2] #actual last line is expected empty
+		
+	def convert_x_variables(self, equation):
+		for i in range(len(self.list_results)-1, -1, -1):
+			equation = equation.replace("X"+str(i+1), str(self.list_results[i]))
+		return equation
 	
 	@staticmethod
 	def calculate(equation):
