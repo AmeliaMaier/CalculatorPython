@@ -2,6 +2,10 @@ import parser
 import tkinter
 from tkinter import ttk
 from tkinter import font
+import re
+import random
+
+random.seed()
 
 class ScrollFrame(tkinter.Frame):
 
@@ -78,8 +82,8 @@ class Window(tkinter.Frame):
 
 		self.frame_history = ScrollFrame(self)
 		self.frame_history.grid(row=1, column=0, columnspan=3, sticky=tkinter.NSEW)
-		
-		self.input_equation = tkinter.Text(self, height=3, width=30, relief=tkinter.FLAT, font=default_font)
+
+		self.input_equation = tkinter.Text(self, height=3, width=30, relief=tkinter.SUNKEN, font=default_font)
 		self.input_equation.grid(row=2, column=0, columnspan=3, sticky=tkinter.EW)
 		self.input_equation.bind("<Return>", self.submit_equation)
 		self.input_equation.bind("<Up>", self.history_up)
@@ -96,14 +100,14 @@ class Window(tkinter.Frame):
 		output_equation.config(state=tkinter.DISABLED)
 		output_equation.grid(row=row, column=0, sticky=tkinter.EW)
 
-		ttk.Separator(self.frame_history.inner_frame, orient=tkinter.VERTICAL).grid(row=row, column=1, stick=tkinter.NS)
+		ttk.Separator(self.frame_history.inner_frame, orient=tkinter.VERTICAL).grid(row=row, column=1, sticky=tkinter.NS)
 
 		x = tkinter.Text(self.frame_history.inner_frame, height=1, width=4, relief=tkinter.FLAT, font=default_font)
 		x.insert(tkinter.END, "X"+str(row)+"=")
 		x.config(state=tkinter.DISABLED)
 		x.grid(row=row, column=2, sticky=tkinter.EW)
 
-		ttk.Separator(self.frame_history.inner_frame, orient=tkinter.VERTICAL).grid(row=row, column=3, stick=tkinter.NS)
+		ttk.Separator(self.frame_history.inner_frame, orient=tkinter.VERTICAL).grid(row=row, column=3, sticky=tkinter.NS)
 
 		output_result = tkinter.Text(self.frame_history.inner_frame, height=1, width=30, relief=tkinter.FLAT, font=default_font)
 		output_result.insert(tkinter.END, result)
@@ -152,7 +156,11 @@ class Window(tkinter.Frame):
 		equation = self.text_last_line(event.widget)
 		equation = equation.strip()
 		equation = self.convert_x_variables(equation)
-		result = self.calculate(equation)
+		result = ""
+		if self.is_dice(equation):
+			result = self.roll_dice(equation)
+		else:
+			result = self.calculate(equation)
 		self.append_output(equation, str(result))
 		self.clear_input()
 		self.index_history = None
@@ -180,6 +188,25 @@ class Window(tkinter.Frame):
 			return eval(formulae)
 		except Exception as e:
 			return "Error: " + str(e)
+			
+	@staticmethod
+	def is_dice(equation):
+		equation = equation.lower()
+		pattern = re.compile('\d+d\d+')
+		match = pattern.match(equation)
+		return (match.group() == equation)
+		
+	@staticmethod
+	def roll_dice(equation):
+		equation = equation.lower()
+		pattern = re.compile('\d+')
+		matches = pattern.findall(equation)
+		dice_count = int(matches[0])
+		dice_sides = int(matches[1])
+		results = []
+		for i in range(0, dice_count):
+			results.append(random.randint(1, dice_sides))
+		return results
 
 root = tkinter.Tk()
 default_font = font.Font(family="Courier", size=10, weight="normal")

@@ -32,3 +32,15 @@ Ex: 3 * X12 - X4
 #Navigation
 
 Use the <Up> and <Down> arrows to scroll through the previous equations, so you don't have to type the whole thing out again.
+
+#Dice
+
+There is special syntax for dice rolls: 
+	XdY 
+	where X is the number of dice 
+	and Y is the number of sides on the dice.
+
+Ex: 3d100 
+This returns 3 rolls of a 100-sided dice.
+
+If you are rolling dice, XdY must be the entire equation.
