@@ -194,6 +194,8 @@ class Window(tkinter.Frame):
 		equation = equation.lower()
 		pattern = re.compile('\d+d\d+')
 		match = pattern.match(equation)
+		if match == None:
+			return False
 		return (match.group() == equation)
 		
 	@staticmethod
